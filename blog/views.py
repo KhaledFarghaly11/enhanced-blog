@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 
+from blog.forms import CommentForm
 from blog.models import AboutPage, ContactPage, HomePage, Post
 
 def home(request):
@@ -22,4 +23,19 @@ def post_details(request, year, month, day, post):
                            publish__day=day,
                            slug=post, 
                            status=Post.Status.PUBLISHED)
-  return render(request, 'blog/post_details.html', {'post': post})
+  comments = post.comments.filter(active=True)
+  return render(request, 'blog/post_details.html', {'post': post, 'comments': comments})
+
+def post_comment(request, post_id):
+  post = get_object_or_404(Post, id=post_id, status=Post.Status.PUBLISHED)
+  
+  comment = None
+  
+  form = CommentForm(data=request.POST)
+
+  if form.is_valid():
+    comment = form.save(commit=False)
+    comment.post = post
+    comment.save()
+    
+  return render(request, 'blog/comment.html', {'comment': comment, 'form': form, 'post': post})

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from blog.models import AboutPage, ContactPage, HomePage, Post
+from blog.models import AboutPage, ContactPage, HomePage, Post, Comment
 
 admin.site.register(HomePage)
 admin.site.register(AboutPage)
@@ -14,3 +14,9 @@ class PostAdmin(admin.ModelAdmin):
   raw_id_fields = ['author']
   date_hierarchy = 'publish'
   ordering = ['status', 'publish']
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+  list_display = ['name', 'email', 'created_at', 'active', 'body']
+  list_filter = ['active', 'created_at']
+  search_fields = ['name', 'body', 'active']
