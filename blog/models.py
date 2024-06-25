@@ -1,9 +1,23 @@
 from django.db import models
 from PIL import Image
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
+from django.urls import reverse
+from django.utils import timezone
 
-def validate_image_dimensions(image):
+def validate_background_image_dimensions(image):
     min_width = 1000
+    min_height = 500
+    img = Image.open(image)
+    width, height = img.size
+
+    if width < min_width or height < min_height:
+        raise ValidationError(
+            f"Image dimensions must be at least {min_width}px wide and {min_height}px tall."
+        )
+
+def validate_post_image_dimensions(image):
+    min_width = 700
     min_height = 500
     img = Image.open(image)
     width, height = img.size
@@ -17,7 +31,7 @@ def validate_image_dimensions(image):
 class PageBase(models.Model):
   title = models.CharField(max_length=150)
   sub_title = models.CharField(max_length=250)
-  bg_image = models.ImageField(upload_to='images/%Y/%m/%d', validators=[validate_image_dimensions])
+  bg_image = models.ImageField(upload_to='images/%Y/%m/%d', validators=[validate_background_image_dimensions])
   created_at = models.DateTimeField(auto_now_add=True)
   updated_at = models.DateTimeField(auto_now=True)
   
@@ -35,3 +49,39 @@ class AboutPage(PageBase):
 
 class ContactPage(PageBase):
   description = models.TextField()
+
+class Post(models.Model):
+  
+  class Status(models.TextChoices):
+    DRAFT = ('DF', 'Draft')
+    PUBLISHED = ('PB', 'Published')
+  
+  title = models.CharField(max_length=250)
+  slug = models.SlugField(max_length=250)
+  author = models.ForeignKey(User, on_delete=models.CASCADE)
+  body = models.TextField()
+  bg_image = models.ImageField(upload_to='images/%Y/%m/%d/background_images', validators=[validate_background_image_dimensions])
+  post_image = models.ImageField(upload_to='images/%Y/%d/post_images', validators=[validate_post_image_dimensions])
+  created_at = models.DateTimeField(auto_now_add=True)
+  updated_at = models.DateTimeField(auto_now=True)
+  publish = models.DateTimeField(default=timezone.now)
+  status = models.CharField(max_length=2, choices=Status.choices, default=Status.DRAFT)
+  
+  class Meta:
+    ordering = ['-publish']
+    
+    indexes = [
+      models.Index(fields=['-publish'])
+    ]
+  
+  def __str__(self):
+    return self.title
+  
+  def get_absolute_url(self):
+      return reverse("blog_post", args=[
+         self.publish.year, 
+         self.publish.month, 
+         self.publish.day, 
+         self.slug
+      ])
+  
