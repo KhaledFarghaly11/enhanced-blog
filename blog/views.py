@@ -1,12 +1,20 @@
 from django.shortcuts import render, get_object_or_404
 from blog.forms import CommentForm, ContactForm
 from blog.models import AboutPage, ContactPage, HomePage, Post
+from taggit.models import Tag
 from django.core.mail import send_mail
 
-def home(request):
+def home(request, tag_slug=None):
   page = HomePage.objects.all()[0]
-  posts = Post.objects.filter(status='PB')
-  return render(request, 'blog/home.html', {'page': page, 'posts': posts})
+  posts = Post.objects.all()
+
+  tag = None
+
+  if tag_slug:
+    tag = get_object_or_404(Tag, slug=tag_slug)
+    posts = posts.filter(tags__in=[tag])
+
+  return render(request, 'blog/home.html', {'page': page, 'posts': posts, 'tag':tag})
 
 def about(request):
   page = AboutPage.objects.all()[0]

@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
+from taggit.managers import TaggableManager
 
 def validate_background_image_dimensions(image):
     min_width = 1000
@@ -66,6 +67,8 @@ class Post(models.Model):
   updated_at = models.DateTimeField(auto_now=True)
   publish = models.DateTimeField(default=timezone.now)
   status = models.CharField(max_length=2, choices=Status.choices, default=Status.DRAFT)
+
+  tags = TaggableManager()
   
   class Meta:
     ordering = ['-publish']
@@ -78,7 +81,7 @@ class Post(models.Model):
     return self.title
   
   def get_absolute_url(self):
-      return reverse("blog_post", args=[
+      return reverse("blog:blog_post", args=[
          self.publish.year, 
          self.publish.month, 
          self.publish.day, 
