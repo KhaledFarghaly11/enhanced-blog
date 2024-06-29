@@ -3,17 +3,26 @@ from blog.forms import CommentForm, ContactForm
 from blog.models import AboutPage, ContactPage, HomePage, Post
 from taggit.models import Tag
 from django.core.mail import send_mail
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 def home(request, tag_slug=None):
   page = HomePage.objects.all()[0]
-  posts = Post.objects.all()
+  post_list = Post.objects.filter(status='PB')
 
   tag = None
 
   if tag_slug:
     tag = get_object_or_404(Tag, slug=tag_slug)
-    posts = posts.filter(tags__in=[tag])
-
+    post_list = post_list.filter(tags__in=[tag])
+  
+  paginator = Paginator(post_list, 5)
+  page_number = request.GET.get('page', 1)
+  try:
+      posts = paginator.page(page_number)
+  except PageNotAnInteger:
+      posts = paginator.page(1)
+  except EmptyPage:
+      posts = paginator.page(paginator.num_pages)
   return render(request, 'blog/home.html', {'page': page, 'posts': posts, 'tag':tag})
 
 def about(request):
